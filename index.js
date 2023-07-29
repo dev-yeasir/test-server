@@ -32,6 +32,9 @@ app.get('/', async (req, res) => {
 app.get('/testarafat', async (req, res) => {
     res.send('hello from test');
 });
+app.get('/testarafat2', async (req, res) => {
+    res.send('hello from test');
+});
 app.use('/users', userRouter);
 // Default error handler middleware
 app.use((err, req, res, next) => {
