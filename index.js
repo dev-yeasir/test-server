@@ -29,7 +29,7 @@ app.use(express.json());
 app.get('/', async (req, res) => {
     res.send('hello arafat');
 });
-app.get('/testarafat', async (req, res) => {
+app.get('/test2', async (req, res) => {
     res.send('hello from test');
 });
 app.get('/testarafat2', async (req, res) => {
