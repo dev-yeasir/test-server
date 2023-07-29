@@ -29,6 +29,9 @@ app.use(express.json());
 app.get('/', async(req, res) => {
     res.send('hello arafat')
 })
+app.get('/test', async(req, res) => {
+    res.send('hello from test')
+})
 app.use('/users', userRouter);
 // Default error handler middleware
 app.use((err, req, res, next) => {
