@@ -40,8 +40,8 @@ const registerUser = async (req, res) => {
         res.status(500).json({
             status: false,
             message: 'Registration failed',
-            error: error.message,
         });
+        console.log(error.message);
     }
 };
 
@@ -52,31 +52,31 @@ const verifyEmail = async (req, res) => {
     try {
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         pool.query('UPDATE users SET isVerified = 1 WHERE email = ? ', [decodedToken.email]);
-        return res.status(200).json({ message: 'Email verified successfully' });
+        return res.status(200).json({ status: true, message: 'Email verified successfully' });
     } catch (error) {
         console.error(error);
         console.log(error.message);
-        return res.status(400).json({ error: 'Invalid or expired token' });
+        return res.status(400).json({ status: false, message: 'Invalid or expired token' });
     }
 };
 
 // user login controller
 const loginUser = async (req, res) => {
-    const { emailOrUsername, password } = req.body;
+    const { usernameOrEmail, password } = req.body;
     try {
         // Check if the user exists in the database based on email or username
         const [user] = await pool.query('SELECT * FROM users WHERE email = ? OR username = ?', [
-            emailOrUsername,
-            emailOrUsername,
+            usernameOrEmail,
+            usernameOrEmail,
         ]);
         // Check if the user was found
         if (!user.length) {
-            return res.status(401).json({ error: 'User not found' });
+            return res.status(401).json({ status: false, message: 'User not found' });
         }
         // Verify the password
         const passwordMatch = await bcrypt.compare(password, user[0].password);
         if (!passwordMatch) {
-            return res.status(401).json({ error: 'Incorrect password' });
+            return res.status(401).json({ status: false, message: 'Incorrect password' });
         }
         const token = generateVerificationToken(user[0].userName, user[0].email);
         if (token) {
@@ -99,11 +99,9 @@ const forgotPassword = async (req, res) => {
 
     try {
         // Check if the email exists in the database
-        const [user] = await pool.query('SELECT * FROM users WHERE email = ? OR userName = ?', [
-            email,
-        ]);
+        const [user] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (!user.length) {
-            return res.status(400).json({ error: 'Email not found' });
+            return res.status(400).json({ status: false, message: 'User not found' });
         }
 
         // Generate a password reset token
@@ -113,35 +111,36 @@ const forgotPassword = async (req, res) => {
         // Send password reset email with the token
         await sendPasswordResetEmail(email, passwordResetToken);
 
-        return res.status(200).json({ message: 'Password reset email sent.' });
+        return res.status(200).json({ status: true, message: 'Password reset email sent.' });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Server error' });
+        return res
+            .status(500)
+            .json({ status: false, message: 'Unable to send password reset email.' });
     }
 };
 
 // reset password controller
 const resetPassword = async (req, res) => {
     const { token } = req.params;
-    const { newPassword } = req.body;
+    const { password } = req.body;
 
     try {
         // Verify the JWT token
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
         // Hash the new password
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // Update the user's password in the database
         await pool.query('UPDATE users SET password = ? WHERE email = ?', [
             hashedPassword,
-            decodedToken.email || decodedToken.userName,
+            decodedToken.email,
         ]);
 
-        return res.status(200).json({ message: 'Password reset successful' });
+        return res.status(200).json({ status: true, message: 'Password reset successful' });
     } catch (error) {
         console.error(error);
-        return res.status(400).json({ error: 'Invalid or expired token' });
+        return res.status(400).json({ status: false, message: 'Invalid or expired token' });
     }
 };
 module.exports = {
